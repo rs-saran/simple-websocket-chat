@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-time Chatbot</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        #chat-box {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+        .message-user {
+            background-color: #d1ecf1;
+            padding: 8px 12px;
+            border-radius: 15px;
+            margin: 5px 0;
+            max-width: 80%;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .message-bot {
+            background-color: #e2e3e5;
+            padding: 8px 12px;
+            border-radius: 15px;
+            margin: 5px 0;
+            max-width: 80%;
+        }
+        .message-system {
+            color: #6c757d;
+            font-style: italic;
+            margin: 5px 0;
+            text-align: center;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+        }
+        #status-indicator {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Interactive Chatbot</h1>
+        
+        <div id="status-indicator" class="alert alert-secondary">
+            Not connected
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col">
+                <button id="start-btn" class="btn btn-primary">Start Chat Session</button>
+                <button id="end-btn" class="btn btn-danger" disabled>End Chat Session</button>
+            </div>
+        </div>
+        
+        <div id="chat-box" class="chat-container mb-3"></div>
+        
+        <div class="input-group">
+            <input type="text" id="message-input" class="form-control" placeholder="Type your message..." disabled>
+            <button id="send-btn" class="btn btn-primary" disabled>Send</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script>
+        let socket = null;
+        
+        document.getElementById('start-btn').addEventListener('click', function() {
+            startChatSession();
+        });
+        
+        document.getElementById('end-btn').addEventListener('click', function() {
+            endChatSession();
+        });
+        
+        document.getElementById('send-btn').addEventListener('click', function() {
+            sendMessage();
+        });
+        
+        document.getElementById('message-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        function startChatSession() {
+            // Create a new socket connection
+            socket = io();
+            
+            // Connection event
+            socket.on('connect', function() {
+                document.getElementById('status-indicator').className = 'alert alert-success';
+                document.getElementById('status-indicator').innerText = 'Connected to chat server';
+                
+                document.getElementById('start-btn').disabled = true;
+                document.getElementById('end-btn').disabled = false;
+                document.getElementById('message-input').disabled = false;
+                document.getElementById('send-btn').disabled = false;
+                
+                // Add connection message to chat
+                addSystemMessage('Connected to chat server');
+            });
+            
+            // Disconnection event
+            socket.on('disconnect', function() {
+                document.getElementById('status-indicator').className = 'alert alert-secondary';
+                document.getElementById('status-indicator').innerText = 'Disconnected from server';
+                
+                document.getElementById('start-btn').disabled = false;
+                document.getElementById('end-btn').disabled = true;
+                document.getElementById('message-input').disabled = true;
+                document.getElementById('send-btn').disabled = true;
+                
+                // Add disconnection message to chat
+                addSystemMessage('Disconnected from chat server');
+            });
+            
+            // Bot message event
+            socket.on('bot_message', function(data) {
+                addBotMessage(data.text);
+            });
+            
+            // System message event
+            socket.on('system_message', function(data) {
+                addSystemMessage(data.text);
+            });
+        }
+        
+        function endChatSession() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (message && socket) {
+                // Add user message to chat
+                addUserMessage(message);
+                
+                // Send message to server
+                socket.emit('user_message', { text: message });
+                
+                // Clear input
+                input.value = '';
+            }
+        }
+        
+        function addUserMessage(text) {
+            const chatBox = document.getElementById('chat-box');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message-user';
+            messageDiv.innerText = text;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        function addBotMessage(text) {
+            const chatBox = document.getElementById('chat-box');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message-bot';
+            messageDiv.innerText = text;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        function addSystemMessage(text) {
+            const chatBox = document.getElementById('chat-box');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message-system';
+            messageDiv.innerText = text;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    </script>
+</body>
+</html>
