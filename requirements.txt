@@ -6,7 +6,7 @@ pydantic~=2.10.6
 uvicorn
 #streamlit
 # File: requirements.txt
-#fastapi==0.104.1
+#fastapi_app==0.104.1
 #uvicorn==0.23.2
 #websocket-client==1.6.1
 #streamlit==1.27.2
